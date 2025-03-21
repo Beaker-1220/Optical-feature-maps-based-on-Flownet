@@ -1,0 +1,3 @@
+# ninja log v5
+0	18735	1727550219326922288	/root/flownet2-pytorch/networks/resample2d_package/build/temp.linux-x86_64-3.6/resample2d_cuda.o	66fe1b6647e58ca3
+0	51971	1727550252563435175	/root/flownet2-pytorch/networks/resample2d_package/build/temp.linux-x86_64-3.6/resample2d_kernel.o	57eb3871e0853787

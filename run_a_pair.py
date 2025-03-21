@@ -16,12 +16,12 @@ if __name__ == '__main__':
     # initial a Net
     net = FlowNet2(args).cuda()
     # load the state_dict
-    dict = torch.load("/home/hjj/PycharmProjects/flownet2_pytorch/FlowNet2_checkpoint.pth.tar")
+    dict = torch.load("/root/FlowNet2_checkpoint.pth.tar")
     net.load_state_dict(dict["state_dict"])
 
     # load the image pair, you can find this operation in dataset.py
-    pim1 = read_gen("/home/hjj/flownet2-master/data/FlyingChairs_examples/0000007-img0.ppm")
-    pim2 = read_gen("/home/hjj/flownet2-master/data/FlyingChairs_examples/0000007-img1.ppm")
+    pim1 = read_gen("/root/autodl-tmp/train_png/lax_P001_slice_00_time_00.ppm")
+    pim2 = read_gen("/root/autodl-tmp/train_png/lax_P001_slice_00_time_01.ppm")
     images = [pim1, pim2]
     images = np.array(images).transpose(3, 0, 1, 2)
     im = torch.from_numpy(images.astype(np.float32)).unsqueeze(0).cuda()
@@ -42,4 +42,4 @@ if __name__ == '__main__':
 
 
     data = result.data.cpu().numpy().transpose(1, 2, 0)
-    writeFlow("/home/hjj/flownet2-master/data/FlyingChairs_examples/0000007-img.flo", data)
+    writeFlow("/root/flownet2-pytorch/result", data)

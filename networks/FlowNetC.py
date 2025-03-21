@@ -102,7 +102,9 @@ class FlowNetC(nn.Module):
         flow6       = self.predict_flow6(out_conv6)
         flow6_up    = self.upsampled_flow6_to_5(flow6)
         out_deconv5 = self.deconv5(out_conv6)
-
+        print("out_conv5 shape: ", out_conv5.shape)
+        print("out_deconv5 shape: ", out_deconv5.shape)
+        print("flow6_up shape: ", flow6_up.shape)
         concat5 = torch.cat((out_conv5,out_deconv5,flow6_up),1)
 
         flow5       = self.predict_flow5(concat5)

@@ -5,6 +5,8 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
 from tensorboardX import SummaryWriter
+import os
+import re
 
 import argparse, os, sys, subprocess
 import setproctitle, colorama
@@ -338,6 +340,8 @@ if __name__ == '__main__':
         progress.close()
 
         return total_loss / float(batch_idx + 1), (batch_idx + 1)
+    
+
 
     # Reusable function for inference
     def inference(args, epoch, data_loader, model, offset=0):
@@ -356,9 +360,10 @@ if __name__ == '__main__':
                 os.makedirs(flow_vis_folder)
         
         args.inference_n_batches = np.inf if args.inference_n_batches < 0 else args.inference_n_batches
-
+        print("1")
         progress = tqdm(data_loader, ncols=100, total=np.minimum(len(data_loader), args.inference_n_batches), desc='Inferencing ', 
             leave=True, position=offset)
+
 
         statistics = []
         total_loss = 0
@@ -377,7 +382,6 @@ if __name__ == '__main__':
             loss_val = losses[0] # Collect first loss for weight update
             total_loss += loss_val.item()
             loss_values = [v.item() for v in losses]
-
             # gather loss_labels, direct return leads to recursion limit error as it looks for variables to gather'
             loss_labels = list(model.module.loss.loss_labels)
 
@@ -393,16 +397,99 @@ if __name__ == '__main__':
                         flow_utils.visulize_flow_file(
                             join(flow_folder, '%06d.flo' % (batch_idx * args.inference_batch_size + i)),flow_vis_folder)
                    
-                            
+            print("2")
             progress.set_description('Inference Averages for Epoch {}: '.format(epoch) + tools.format_dictionary_of_losses(loss_labels, np.array(statistics).mean(axis=0)))
             progress.update(1)
-
             if batch_idx == (args.inference_n_batches - 1):
                 break
 
         progress.close()
 
         return
+    
+    
+
+    # # 修改后的推理函数，处理成对的图片
+    # def inference(args, epoch, data_loader, model, offset=0):
+
+    #     model.eval()
+
+    #     # 创建保存光流结果和可视化结果的文件夹
+    #     flow_folder = "{}/inference/{}.epoch-{}-flow-field".format(args.save, args.name.replace('/', '.'), epoch)
+    #     if not os.path.exists(flow_folder):
+    #         os.makedirs(flow_folder)
+
+    #     if args.inference_visualize:
+    #         flow_vis_folder = "{}/inference/{}.epoch-{}-flow-vis".format(args.save, args.name.replace('/', '.'), epoch)
+    #         if not os.path.exists(flow_vis_folder):
+    #             os.makedirs(flow_vis_folder)
+
+    #     args.inference_n_batches = np.inf if args.inference_n_batches < 0 else args.inference_n_batches
+
+    #     progress = tqdm(data_loader, ncols=100, total=np.minimum(len(data_loader), args.inference_n_batches), desc='Inferencing ', leave=True, position=offset)
+
+    #     statistics = []
+    #     total_loss = 0
+    #     previous_image_info = None
+    #     previous_image_data = None
+
+    #     for batch_idx, (data, target) in enumerate(progress):
+    #         if args.cuda:
+    #             data = [d.cuda(non_blocking=True) for d in data]
+
+    #         # 假设文件名在 `target` 或 `data` 中，首先检查它的类型
+    #         current_filename = data[0]  # 根据具体的数据结构，可能需要调整这一行
+    #         print(current_filename)
+    #         if not isinstance(current_filename, str):
+    #             print(f"Warning: Expected string for filename, but got {type(current_filename)}")
+    #             # 如果不是字符串，尝试从其他地方获取文件名，或者跳过这批数据
+    #             continue
+            
+    #         # 从文件名中提取 P, slice 和 time 信息
+    #         P_current, slice_current, time_current = extract_info_from_filename(current_filename)
+    #         print(P_current,slice_current,time_current)
+
+    #         # 检查是否有前一个图片，且 P 和 slice 相等且 time 相邻
+    #         if previous_image_info:
+    #             P_prev, slice_prev, time_prev = previous_image_info
+
+    #             if P_current == P_prev and slice_current == slice_prev and time_current == time_prev + 1:
+    #                 # 对当前图片和前一张图片执行光流推理
+    #                 with torch.no_grad():
+    #                     losses, output = model(previous_image_data[0], data[0], inference=True)
+
+    #                 losses = [torch.mean(loss_value) for loss_value in losses]
+    #                 loss_val = losses[0]
+    #                 total_loss += loss_val.item()
+    #                 loss_values = [v.item() for v in losses]
+
+    #                 # 存储损失统计数据
+    #                 loss_labels = list(model.module.loss.loss_labels)
+    #                 statistics.append(loss_values)
+
+    #                 # 如果需要保存光流结果
+    #                 if args.save_flow or args.render_validation:
+    #                     _pflow = output[0].data.cpu().numpy().transpose(1, 2, 0)
+    #                     flow_utils.writeFlow(os.path.join(flow_folder, '%06d.flo' % batch_idx), _pflow)
+
+    #                     if args.inference_visualize:
+    #                         flow_utils.visulize_flow_file(
+    #                             os.path.join(flow_folder, '%06d.flo' % batch_idx), flow_vis_folder)
+
+    #         # 更新前一张图片的信息和数据
+    #         previous_image_info = (P_current, slice_current, time_current)
+    #         previous_image_data = data
+
+    #         progress.set_description('Inference Averages for Epoch {}: '.format(epoch) + 
+    #                                 tools.format_dictionary_of_losses(loss_labels, np.array(statistics).mean(axis=0)))
+    #         progress.update(1)
+
+    #         if batch_idx == (args.inference_n_batches - 1):
+    #             break
+
+    #     progress.close()
+
+    #     return
 
     # Primary epoch loop
     best_err = 1e8

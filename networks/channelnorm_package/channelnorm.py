@@ -6,6 +6,7 @@ class ChannelNormFunction(Function):
 
     @staticmethod
     def forward(ctx, input1, norm_deg=2):
+        input1 = input1.contiguous()
         assert input1.is_contiguous()
         b, _, h, w = input1.size()
         output = input1.new(b, 1, h, w).zero_()
